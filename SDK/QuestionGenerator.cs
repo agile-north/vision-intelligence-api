@@ -20,12 +20,12 @@ public static class QuestionGenerator
         };
         if (criteriaLookup.Values.All(x => !string.IsNullOrWhiteSpace(x)))
             question.Append(
-                $"is from the retailer {query.Retailer} ," +
+                $"is from the retailer {query.Retailer}, " +
                 $"has a product called {query.Product} from a brand called {query.Brand} in a quantity numbered {query.Quantity} of uom {query.Uom}");
         else
         {
             if (!string.IsNullOrWhiteSpace(criteriaLookup[1]))
-                question.Append($"is from the retailer {query.Retailer} ,");
+                question.Append($"is from the retailer {query.Retailer}, ");
             if (!string.IsNullOrWhiteSpace(criteriaLookup[3]) && !string.IsNullOrWhiteSpace(criteriaLookup[2]))
                 question.Append($"has a product called {query.Product} from a brand called {query.Brand} ");
             else if (!string.IsNullOrWhiteSpace(criteriaLookup[3]) && string.IsNullOrWhiteSpace(criteriaLookup[2]))
@@ -33,9 +33,9 @@ public static class QuestionGenerator
             else if (string.IsNullOrWhiteSpace(criteriaLookup[3]) && !string.IsNullOrWhiteSpace(criteriaLookup[2]))
                 question.Append($"has a product from a brand called {query.Brand} ");
             if (!string.IsNullOrWhiteSpace(criteriaLookup[4]))
-                question.Append($"in a quantity numbered {query.Quantity} ");
+                question.Append($"in a quantity {query.Quantity} ");
             if (!string.IsNullOrWhiteSpace(criteriaLookup[5]))
-                question.Append($" of {query.Uom}");
+                question.Append($"{query.Uom}");
         }
 
         return question.ToString();

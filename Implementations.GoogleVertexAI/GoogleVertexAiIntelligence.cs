@@ -66,7 +66,12 @@ public class GoogleVertexAiIntelligence : Intelligence<GoogleVertexAiIntelligenc
                     CultureInfo.InvariantCulture, out var second) &&
                 double.TryParse(responseResult.predictions.ElementAt(2), NumberStyles.Float,
                     CultureInfo.InvariantCulture, out var third))
+            {
                 result.Certainty = Math.Round((first + second + third) / 3, 2);
+                if (result.Certainty < 90)
+                    result.ImprovementHint =
+                        "Please upload a cleaner image following the instructions provided (if any)";
+            }
             else
             {
                 result.Certainty = 0d;
