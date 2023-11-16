@@ -46,7 +46,7 @@ public class GoogleVertexAiIntelligence : Intelligence<GoogleVertexAiIntelligenc
             },
             parameters = new
             {
-                sampleCount = 1
+                sampleCount = 3
             }
         };
         request.Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
@@ -59,10 +59,14 @@ public class GoogleVertexAiIntelligence : Intelligence<GoogleVertexAiIntelligenc
         {
             var responseResult =
                 await JsonSerializer.DeserializeAsync<Result>(await response.Content.ReadAsStreamAsync());
-            if (responseResult != null && responseResult.predictions.Count() == 1 &&
+            if (responseResult != null && responseResult.predictions.Count() == 3 &&
                 double.TryParse(responseResult.predictions.ElementAt(0), NumberStyles.Float,
-                    CultureInfo.InvariantCulture, out var certainty))
-                result.Certainty = certainty;
+                    CultureInfo.InvariantCulture, out var first) &&
+                double.TryParse(responseResult.predictions.ElementAt(1), NumberStyles.Float,
+                    CultureInfo.InvariantCulture, out var second) &&
+                double.TryParse(responseResult.predictions.ElementAt(2), NumberStyles.Float,
+                    CultureInfo.InvariantCulture, out var third))
+                result.Certainty = Math.Round((first + second + third) / 3, 2);
             else
             {
                 result.Certainty = 0d;
