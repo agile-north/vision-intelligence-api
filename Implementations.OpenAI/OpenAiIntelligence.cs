@@ -1,16 +1,17 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using Contracts;
 using SDK;
 
 namespace Implementations.OpenAI;
 
-public class OpenAiIntelligence : Intelligence<OpenAiIntelligenceConfiguration>,IImageInterpreter
+public class OpenAiIntelligence : Intelligence<OpenAiIntelligenceConfiguration>, IImageInterpreter
 {
     private HttpClient HttpClient { get; }
 
-    public OpenAiIntelligence(OpenAiIntelligenceConfiguration configuration,HttpClient httpClient) : base(configuration)
+    public OpenAiIntelligence(OpenAiIntelligenceConfiguration configuration, HttpClient httpClient) : base(configuration)
     {
         HttpClient = httpClient;
     }
@@ -69,15 +70,24 @@ public class OpenAiIntelligence : Intelligence<OpenAiIntelligenceConfiguration>,
     private async Task Request(params object[] content)
     {
         var request = new HttpRequestMessage
-            { Method = HttpMethod.Post, RequestUri = new Uri(HttpClient.BaseAddress!, "v1/chat/completions") };
-        var body = new JsonObject
+        { Method = HttpMethod.Post, RequestUri = new Uri(HttpClient.BaseAddress!, "v1/chat/completions") };
+
+        var body = new
         {
-            { "name", "gpt-4-vision-preview" },
-            { "content", JsonNode.Parse(JsonSerializer.SerializeToUtf8Bytes(content)) },
-            { "max_tokens", Configuration.MaxTokens }
+            model = "gpt-4-vision-preview",
+            messages = new object[]{
+                new {
+                    content,
+                    role = "user"
+                }
+            },
+            max_tokens = Configuration.MaxTokens
         };
-        request.Content = new StringContent(body.ToJsonString(), Encoding.UTF8, "application/json");
+
+        request.Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
         var response = await HttpClient.SendAsync(request);
+
+        var str = await response.Content.ReadAsStringAsync();
         response.EnsureSuccessStatusCode();
 
     }
