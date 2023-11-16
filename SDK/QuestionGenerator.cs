@@ -21,7 +21,7 @@ public static class QuestionGenerator
         if (criteriaLookup.Values.All(x => !string.IsNullOrWhiteSpace(x)))
             question.Append(
                 $"is from the retailer {query.Retailer}, " +
-                $"has a product called {query.Product} from a brand called {query.Brand} in a quantity numbered {query.Quantity} of uom {query.Uom}");
+                $"has a product called {query.Product} from a brand called {query.Brand} in a quantity numbered {query.Quantity}{query.Uom}");
         else
         {
             if (!string.IsNullOrWhiteSpace(criteriaLookup[1]))
