@@ -19,7 +19,7 @@ public class GoogleVertexAiIntelligence : Intelligence<GoogleVertexAiIntelligenc
 
     public Task<ImageQueryResult> InterpretImage(ImageQuery query)
     {
-        return Request(QuestionGenerator.GenerateQuestion(query), query.Base64!);
+        return Request(QuestionGenerator.GenerateQuestion(query), query.Image?.AsBase64()!);
     }
 
     private async Task<ImageQueryResult> Request(string prompt, string bytesBase64EncodedImage)

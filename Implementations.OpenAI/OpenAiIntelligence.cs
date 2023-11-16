@@ -1,3 +1,4 @@
+using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -18,8 +19,8 @@ public class OpenAiIntelligence : Intelligence<OpenAiIntelligenceConfiguration>,
 
     public async Task<ImageQueryResult> InterpretImage(ImageQuery query)
     {
-    
-        await Request(
+
+        var chatCompletion = await Request(
             new
             {
                 type = "text",
@@ -30,16 +31,21 @@ public class OpenAiIntelligence : Intelligence<OpenAiIntelligenceConfiguration>,
                 type = "image_url",
                 image_url = new
                 {
-                    url = !string.IsNullOrWhiteSpace(query.Base64)
-                        ? $"data:{query.ContentType};base64,{query.Base64}"
-                        : query.Url?.ToString(),
-                    detail = query.Detail
+                    url = query.Image!.AsDataUrl(),
+                    detail = query.Quality
                 }
             });
-        return new ImageQueryResult();
+
+        var s = chatCompletion.Choices.FirstOrDefault()?.Message?.Content;
+
+        var defaultValue = new ImageQueryResult();
+        if (s == null)
+            return defaultValue;
+
+        return JsonSerializer.Deserialize<ImageQueryResult>(s!) ?? defaultValue;
     }
 
-    private async Task Request(params object[] content)
+    private async Task<ChatCompletion> Request(params object[] content)
     {
         var request = new HttpRequestMessage
         { Method = HttpMethod.Post, RequestUri = new Uri(HttpClient.BaseAddress!, "v1/chat/completions") };
@@ -59,7 +65,7 @@ public class OpenAiIntelligence : Intelligence<OpenAiIntelligenceConfiguration>,
         request.Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
         var response = await HttpClient.SendAsync(request);
 
-        var str = await response.Content.ReadAsStringAsync();
         response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<ChatCompletion>();
     }
 }

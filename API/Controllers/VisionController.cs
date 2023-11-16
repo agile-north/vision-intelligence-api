@@ -16,35 +16,16 @@ public class VisionController : ControllerBase
     }
 
     [HttpPost("AnalyseImage")]
-    public async Task<ImageQueryResult> AnalyseImageAsync(IFormFile? file,[FromQuery] FormImageQuery query)
+    // [Consumes("multipart/form-data")]
+    public async Task<ImageQueryResult> AnalyseImageAsync([FromBody] ImageQuery? query)
     {
         var interpreter = _imageInterpreters.FirstOrDefault();
         if (interpreter == null)
             throw new NotImplementedException();
-        var q = new ImageQuery
-        {
-            Brand = query.Brand,
-            Product = query.Product,
-            Detail = query.Detail,
-            Quantity = query.Quantity,
-            Retailer = query.Retailer,
-            Uom = query.Uom
-        };
+
         try
         {
-            if (file != null)
-            {
-                byte[] data;
-                using (var ms = new MemoryStream())
-                {
-                    await file.CopyToAsync(ms);
-                    data = ms.ToArray();
-                }
-
-                q.Base64 = Convert.ToBase64String(data);
-                q.ContentType = file.ContentType;
-                return await interpreter.InterpretImage(q);
-            }
+            return await interpreter.InterpretImage(query);
         }
         catch (Exception ex)
         {
