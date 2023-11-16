@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using Implementations.GoogleVertexAI;
 using Implementations.OpenAI;
 using SDK;
 
@@ -10,15 +11,35 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddSingleton(builder.Configuration.GetSection("Intelligences:OpenAI")
-    .Get<OpenAiIntelligenceConfiguration>());
-builder.Services.AddHttpClient<OpenAiIntelligence>((serviceProvider, client) =>
+var openAiIntelligenceConfiguration = builder.Configuration.GetSection("Intelligences:OpenAI")
+    .Get<OpenAiIntelligenceConfiguration>();
+if (openAiIntelligenceConfiguration.Enabled)
 {
-    var configuration = serviceProvider.GetRequiredService<OpenAiIntelligenceConfiguration>();
-    client.BaseAddress = configuration.BaseAddress;
-    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", configuration.ApiKey);
-});
-builder.Services.AddScoped<IImageInterpreter>(sp => sp.GetRequiredService<OpenAiIntelligence>());
+    builder.Services.AddSingleton(openAiIntelligenceConfiguration);
+    builder.Services.AddHttpClient<OpenAiIntelligence>((serviceProvider, client) =>
+    {
+        var configuration = serviceProvider.GetRequiredService<OpenAiIntelligenceConfiguration>();
+        client.BaseAddress = configuration.BaseAddress;
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", configuration.ApiKey);
+    });
+    builder.Services.AddScoped<IImageInterpreter>(sp => sp.GetRequiredService<OpenAiIntelligence>());
+
+}
+
+var googleVertexAiIntelligenceConfiguration = builder.Configuration.GetSection("Intelligences:GoogleVertexAI")
+    .Get<GoogleVertexAiIntelligenceConfiguration>();
+if (googleVertexAiIntelligenceConfiguration.Enabled)
+{
+    builder.Services.AddSingleton(googleVertexAiIntelligenceConfiguration);
+    builder.Services.AddHttpClient<GoogleVertexAiIntelligence>((serviceProvider, client) =>
+    {
+        var configuration = serviceProvider.GetRequiredService<GoogleVertexAiIntelligenceConfiguration>();
+        client.BaseAddress = configuration.BaseAddress;
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", configuration.AccessKey);
+    });
+    builder.Services.AddScoped<IImageInterpreter>(sp => sp.GetRequiredService<GoogleVertexAiIntelligence>());
+}
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

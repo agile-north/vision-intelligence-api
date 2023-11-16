@@ -18,40 +18,12 @@ public class OpenAiIntelligence : Intelligence<OpenAiIntelligenceConfiguration>,
 
     public async Task<ImageQueryResult> InterpretImage(ImageQuery query)
     {
-        var question = new StringBuilder("What is the probability that the image  ");
-        var criteriaLookup = new Dictionary<int, string?>
-        {
-            { 1, query.Retailer },
-            { 2, query.Brand },
-            { 3, query.Product },
-            { 4, query.Quantity?.ToString() },
-            { 5, query.Uom }
-        };
-        if (criteriaLookup.Values.All(x => !string.IsNullOrWhiteSpace(x)))
-            question.Append(
-                $"is from the retailer {query.Retailer} ," +
-                $"has a product called {query.Product} from a brand called {query.Brand} in a quantity numbered {query.Quantity} of {query.Uom}");
-        else
-        {
-            if (!string.IsNullOrWhiteSpace(criteriaLookup[1]))
-                question.Append($"is from the retailer {query.Retailer} ,");
-            if (!string.IsNullOrWhiteSpace(criteriaLookup[3]) && !string.IsNullOrWhiteSpace(criteriaLookup[2]))
-                question.Append($"has a product called {query.Product} from a brand called {query.Brand} ");
-            else if (!string.IsNullOrWhiteSpace(criteriaLookup[3]) && string.IsNullOrWhiteSpace(criteriaLookup[2]))
-                question.Append($"has a product called {query.Product} ");
-            else if (string.IsNullOrWhiteSpace(criteriaLookup[3]) && !string.IsNullOrWhiteSpace(criteriaLookup[2]))
-                question.Append($"has a product from a brand called {query.Brand} ");
-            if (!string.IsNullOrWhiteSpace(criteriaLookup[4]))
-                question.Append($"in a quantity numbered {query.Quantity} ");
-            if (!string.IsNullOrWhiteSpace(criteriaLookup[5]))
-                question.Append($" of {query.Uom}");
-        }
-
+    
         await Request(
             new
             {
                 type = "text",
-                text = question.ToString()
+                text = QuestionGenerator.GenerateQuestion(query)
             },
             new
             {
@@ -89,6 +61,5 @@ public class OpenAiIntelligence : Intelligence<OpenAiIntelligenceConfiguration>,
 
         var str = await response.Content.ReadAsStringAsync();
         response.EnsureSuccessStatusCode();
-
     }
 }

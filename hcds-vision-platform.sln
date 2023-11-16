@@ -8,6 +8,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Implementations.OpenAI", "I
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SDK", "SDK\SDK.csproj", "{6C207047-C754-4A08-AFAA-6ADD6014E425}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Implementations.GoogleVertexAI", "Implementations.GoogleVertexAI\Implementations.GoogleVertexAI.csproj", "{F9841181-501B-4782-943F-219723CC32F0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +32,9 @@ Global
 		{6C207047-C754-4A08-AFAA-6ADD6014E425}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6C207047-C754-4A08-AFAA-6ADD6014E425}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6C207047-C754-4A08-AFAA-6ADD6014E425}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F9841181-501B-4782-943F-219723CC32F0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F9841181-501B-4782-943F-219723CC32F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F9841181-501B-4782-943F-219723CC32F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F9841181-501B-4782-943F-219723CC32F0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

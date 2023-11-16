@@ -19,6 +19,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Contracts\Contracts.csproj" />
+      <ProjectReference Include="..\Implementations.GoogleVertexAI\Implementations.GoogleVertexAI.csproj" />
       <ProjectReference Include="..\Implementations.OpenAI\Implementations.OpenAI.csproj" />
     </ItemGroup>
 
