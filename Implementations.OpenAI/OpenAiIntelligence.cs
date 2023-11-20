@@ -41,15 +41,24 @@ public class OpenAiIntelligence : Intelligence<OpenAiIntelligenceConfiguration>,
         var defaultValue = new ImageQueryResult();
         if (s == null)
             return defaultValue;
-
-        return JsonSerializer.Deserialize<ImageQueryResult>(s!) ?? defaultValue;
+        var results = JsonSerializer.Deserialize<ImageQueryResult[]>(s!);
+        return new ImageQueryResult
+        {
+            ImprovementHint = string.Join(Environment.NewLine,
+                results?.Where(x => !string.IsNullOrWhiteSpace(x.ImprovementHint)).Select(x => x.ImprovementHint) ??
+                Array.Empty<string>()),
+            Exception = string.Join(Environment.NewLine,
+                results?.Where(x => !string.IsNullOrWhiteSpace(x.Exception)).Select(x => x.Exception) ??
+                Array.Empty<string>()),
+            Certainty = results?.Average(x => x.Certainty) ?? 0
+        };
     }
 
     private async Task<ChatCompletion> Request(params object[] content)
     {
         var request = new HttpRequestMessage
         { Method = HttpMethod.Post, RequestUri = new Uri(HttpClient.BaseAddress!, "v1/chat/completions") };
-
+        
         var body = new
         {
             model = "gpt-4-vision-preview",
@@ -66,6 +75,7 @@ public class OpenAiIntelligence : Intelligence<OpenAiIntelligenceConfiguration>,
         var response = await HttpClient.SendAsync(request);
 
         response.EnsureSuccessStatusCode();
+
         return await response.Content.ReadFromJsonAsync<ChatCompletion>();
     }
 }

@@ -29,6 +29,7 @@ if (openAiIntelligenceConfiguration.Enabled)
         var configuration = serviceProvider.GetRequiredService<OpenAiIntelligenceConfiguration>();
         client.BaseAddress = configuration.BaseAddress;
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", configuration.ApiKey);
+        client.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue() { NoCache = true };
     });
     builder.Services.AddScoped<IImageInterpreter>(sp => sp.GetRequiredService<OpenAiIntelligence>());
 

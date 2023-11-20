@@ -12,14 +12,14 @@ public static class QuestionGenerator
     {
         var question = new List<string>();
 
-        question.Add($"Given the image, I want to find out if it meets the following criteria:");
+        question.Add($"Given the image of a receipt, confirm that it meets each of the following criteria exactly:");
 
         if (!string.IsNullOrWhiteSpace(query.Retailer))
-            question.Add($"The retailer or vendor '{query.Retailer}' is mentioned with exact spelling");
+            question.Add($"The retailer or vendor is '{query.Retailer}' represented exactly in text");
 
         if (!string.IsNullOrWhiteSpace(query.Product))
         {
-            question.Add($"'{query.Product}' is mentioned with exact spelling");
+            question.Add($"It contains the product '{query.Product}' represented exactly in text");
         }
 
         if (query.Products?.Items.Any() ?? false)
@@ -27,10 +27,10 @@ public static class QuestionGenerator
             foreach (var product in query.Products.Items)
             {
                 var items = new List<string>();
-                items.Add($"The product '{product.Product}' is mentioned with exact spelling");
+                items.Add($"It contains the product name '{product.Product}' represented exactly in text");
 
                 if (product.Quantity.HasValue)
-                    items.Add($"and has a quantity of at least '{product.Quantity.Value}'");
+                    items.Add($"with a quantity of at least '{product.Quantity.Value}'");
 
                 question.Add(string.Join(" ", items.ToArray()));
             }
@@ -53,11 +53,11 @@ public static class QuestionGenerator
             Exception = ""
         }, new JsonSerializerOptions { WriteIndented = false });
 
-        question.Add("All the criteria with exact spelling have to match in order to give the certainty. If the spelling is not an exact match consider it not a match.");
+        question.Add("All retailers and product names need to match the spelling provided exactly, don't consider if words might be a typo or truncated.");
 
-        question.Add($"Have the response returned not in markdown but in raw unescaped json format like this: '{responseFormat}'");
+        question.Add($"Have the response returned not in markdown but in raw unescaped json format like this: '{responseFormat}' as an array for each criteria");
 
-        question.Add($"where '{nameof(ImageQueryResult.Certainty)}' gives the percentage of certainty of the criteria mentioned above matches.");
+        question.Add($"where each entry has '{nameof(ImageQueryResult.Certainty)}' as 100 when all the criteria was fulfilled exactly and 0 if not.");
         question.Add($"where '{nameof(ImageQueryResult.ImprovementHint)}' gives a hint on how the certainty can be improved by providing better information or image. This can also be used to indicate how you matched the criteria.");
 
         return string.Join(Environment.NewLine, question.ToArray());
