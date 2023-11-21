@@ -30,7 +30,7 @@ public static class QuestionGenerator
                 items.Add($"It contains the product name '{product.Product}' represented exactly in text");
 
                 if (product.Quantity.HasValue)
-                    items.Add($"with a quantity of at least '{product.Quantity.Value}'");
+                    items.Add($"with a quantity of at least '{product.Quantity.Value}{product.Uom ?? ""}'");
 
                 question.Add(string.Join(" ", items.ToArray()));
             }
@@ -41,7 +41,7 @@ public static class QuestionGenerator
             foreach (var brand in query.Brands.Items)
             {
                 var items = new List<string>();
-                items.Add($"The brand '{brand}' is mentioned with exact spelling");
+                items.Add($"It contains the brand '{brand}' represented exactly in text");
                 question.Add(string.Join(" ", items.ToArray()));
             }
         }
