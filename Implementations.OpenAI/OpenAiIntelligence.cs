@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
@@ -47,17 +48,26 @@ public class OpenAiIntelligence : Intelligence<OpenAiIntelligenceConfiguration>,
         var defaultValue = new ReceiptQueryResult();
         if (s == null)
             return defaultValue;
-        var results = JsonSerializer.Deserialize<ReceiptQueryResult[]>(s!);
-        return new ReceiptQueryResult
+
+        s = s.Replace("```json", "").Replace("```", "");
+
+        try {
+            var results = JsonSerializer.Deserialize<ReceiptQueryResult[]>(s!);
+            return new ReceiptQueryResult
+            {
+                ImprovementHint = string.Join(Environment.NewLine,
+                    results?.Where(x => !string.IsNullOrWhiteSpace(x.ImprovementHint)).Select(x => x.ImprovementHint) ??
+                    Array.Empty<string>()),
+                Exception = string.Join(Environment.NewLine,
+                    results?.Where(x => !string.IsNullOrWhiteSpace(x.Exception)).Select(x => x.Exception) ??
+                    Array.Empty<string>()),
+                Certainty = results?.Average(x => x.Certainty) ?? 0
+            };
+        }
+        catch(Exception ex)
         {
-            ImprovementHint = string.Join(Environment.NewLine,
-                results?.Where(x => !string.IsNullOrWhiteSpace(x.ImprovementHint)).Select(x => x.ImprovementHint) ??
-                Array.Empty<string>()),
-            Exception = string.Join(Environment.NewLine,
-                results?.Where(x => !string.IsNullOrWhiteSpace(x.Exception)).Select(x => x.Exception) ??
-                Array.Empty<string>()),
-            Certainty = results?.Average(x => x.Certainty) ?? 0
-        };
+            throw;
+        }
     }
 
     private async Task<ChatCompletion> Request(params object[] content)
@@ -79,6 +89,10 @@ public class OpenAiIntelligence : Intelligence<OpenAiIntelligenceConfiguration>,
 
         request.Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
         var response = await HttpClient.SendAsync(request);
+
+
+        if (!response.IsSuccessStatusCode)
+            Debugger.Break();
 
         response.EnsureSuccessStatusCode();
 

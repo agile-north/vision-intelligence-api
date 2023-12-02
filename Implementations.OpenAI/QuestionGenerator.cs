@@ -65,9 +65,9 @@ public static class QuestionGenerator
         question.Add("- Ensure that the evaluation of the criteria is consistent when validating the receipt multiple times");
 
         question.Add("Here is how I want you to return the response:");
-        question.Add($"Have the response returned not in markdown but in raw unescaped json format like this: '{responseFormat}' as an array for each criteria");
+        question.Add($"Have the response returned not in natural language text or markdown but in raw unescaped json format like this: '{responseFormat}' as an array for each criteria");
 
-        question.Add($"where each entry has '{nameof(ReceiptQueryResult.Certainty)}' as 100 when all the criteria was fulfilled exactly and 0 if not.");
+        question.Add($"where each entry has '{nameof(ReceiptQueryResult.Certainty)}' as 100 when the criteria was fulfilled exactly and 0 if not.");
         question.Add($"where '{nameof(ReceiptQueryResult.ImprovementHint)}' gives a hint on how the certainty can be improved by providing better information or image. This can also be used to indicate how you matched the criteria without disclosing the asking criteria.");
 
         return string.Join(Environment.NewLine, question.ToArray());
