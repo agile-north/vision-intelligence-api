@@ -31,7 +31,7 @@ if (openAiIntelligenceConfiguration.Enabled)
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", configuration.ApiKey);
         client.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue() { NoCache = true };
     });
-    builder.Services.AddScoped<IImageInterpreter>(sp => sp.GetRequiredService<OpenAiIntelligence>());
+    builder.Services.AddScoped<IReceiptInterpreter>(sp => sp.GetRequiredService<OpenAiIntelligence>());
 
 }
 
@@ -46,7 +46,7 @@ if (googleVertexAiIntelligenceConfiguration.Enabled)
         client.BaseAddress = configuration.BaseAddress;
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", configuration.AccessKey);
     });
-    builder.Services.AddScoped<IImageInterpreter>(sp => sp.GetRequiredService<GoogleVertexAiIntelligence>());
+    builder.Services.AddScoped<IReceiptInterpreter>(sp => sp.GetRequiredService<GoogleVertexAiIntelligence>());
 }
 
 var app = builder.Build();

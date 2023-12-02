@@ -1,14 +1,13 @@
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Nodes;
-using System.Text.Json.Serialization;
 using Contracts;
+using Contracts.Receipts;
 using SDK;
 
 namespace Implementations.OpenAI;
 
-public class OpenAiIntelligence : Intelligence<OpenAiIntelligenceConfiguration>, IImageInterpreter
+public class OpenAiIntelligence : Intelligence<OpenAiIntelligenceConfiguration>, IReceiptInterpreter
 {
     private HttpClient HttpClient { get; }
 
@@ -17,8 +16,15 @@ public class OpenAiIntelligence : Intelligence<OpenAiIntelligenceConfiguration>,
         HttpClient = httpClient;
     }
 
-    public async Task<ImageQueryResult> InterpretImage(ImageQuery query)
+    public Task<ReceiptQueryResult> Interpret(ReceiptQuery query)
     {
+        var first = query.Criteria.FirstOrDefault();
+        return Interpret(first, query.Image);
+    }
+
+    public async Task<ReceiptQueryResult> Interpret(ReceiptCriteria query, Blob image)
+    {
+        var imageUrl = image!.AsDataUrl().ToString();
 
         var chatCompletion = await Request(
             new
@@ -31,18 +37,18 @@ public class OpenAiIntelligence : Intelligence<OpenAiIntelligenceConfiguration>,
                 type = "image_url",
                 image_url = new
                 {
-                    url = query.Image!.AsDataUrl(),
+                    url = imageUrl,
                     detail = query.Quality
                 }
             });
 
         var s = chatCompletion.Choices.FirstOrDefault()?.Message?.Content;
 
-        var defaultValue = new ImageQueryResult();
+        var defaultValue = new ReceiptQueryResult();
         if (s == null)
             return defaultValue;
-        var results = JsonSerializer.Deserialize<ImageQueryResult[]>(s!);
-        return new ImageQueryResult
+        var results = JsonSerializer.Deserialize<ReceiptQueryResult[]>(s!);
+        return new ReceiptQueryResult
         {
             ImprovementHint = string.Join(Environment.NewLine,
                 results?.Where(x => !string.IsNullOrWhiteSpace(x.ImprovementHint)).Select(x => x.ImprovementHint) ??

@@ -1,8 +1,8 @@
 using System;
 
-namespace Contracts
+namespace Contracts.Receipts
 {
-    public class ImageQueryResult
+    public class ReceiptQueryResult
     {
         public double? Certainty { get; set; }
         public string? ImprovementHint { get; set; }

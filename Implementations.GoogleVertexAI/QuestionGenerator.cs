@@ -2,25 +2,20 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
-using Contracts;
+using Contracts.Receipts;
 
-namespace SDK;
+namespace Implementations.GoogleVertexAI;
 
 public static class QuestionGenerator
 {
-    public static string GenerateQuestion(ImageQuery query)
+    public static string GenerateQuestion(ReceiptCriteria query)
     {
         var question = new List<string>();
 
         question.Add($"Given the image of a receipt, confirm that it meets each of the following criteria exactly:");
 
-        if (!string.IsNullOrWhiteSpace(query.Retailer))
-            question.Add($"The retailer or vendor is '{query.Retailer}' represented exactly in text");
-
-        if (!string.IsNullOrWhiteSpace(query.Product))
-        {
-            question.Add($"It contains the product '{query.Product}' represented exactly in text");
-        }
+        foreach (var retailer in query.Retailers)
+            question.Add($"The retailer or vendor is '{retailer}' represented exactly in text");
 
         if (query.Products?.Items.Any() ?? false)
         {
@@ -46,7 +41,7 @@ public static class QuestionGenerator
             }
         }
 
-        var responseFormat = JsonSerializer.Serialize(new ImageQueryResult
+        var responseFormat = JsonSerializer.Serialize(new ReceiptQueryResult
         {
             Certainty = 50,
             ImprovementHint = "",
@@ -57,8 +52,8 @@ public static class QuestionGenerator
 
         question.Add($"Have the response returned not in markdown but in raw unescaped json format like this: '{responseFormat}' as an array for each criteria");
 
-        question.Add($"where each entry has '{nameof(ImageQueryResult.Certainty)}' as 100 when all the criteria was fulfilled exactly and 0 if not.");
-        question.Add($"where '{nameof(ImageQueryResult.ImprovementHint)}' gives a hint on how the certainty can be improved by providing better information or image. This can also be used to indicate how you matched the criteria.");
+        question.Add($"where each entry has '{nameof(ReceiptQueryResult.Certainty)}' as 100 when all the criteria was fulfilled exactly and 0 if not.");
+        question.Add($"where '{nameof(ReceiptQueryResult.ImprovementHint)}' gives a hint on how the certainty can be improved by providing better information or image. This can also be used to indicate how you matched the criteria.");
 
         return string.Join(Environment.NewLine, question.ToArray());
     }
