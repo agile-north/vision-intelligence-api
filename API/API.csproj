@@ -9,6 +9,8 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="6.0.22" />
+        <PackageReference Include="Nrth.Common" Version="2.5.435-master" />
+        <PackageReference Include="Nrth.Common.AspNetCore" Version="2.5.435-master" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
     </ItemGroup>
 
@@ -21,6 +23,7 @@
     <ItemGroup>
       <ProjectReference Include="..\Contracts\Contracts.csproj" />
       <ProjectReference Include="..\Implementations.GoogleVertexAI\Implementations.GoogleVertexAI.csproj" />
+      <ProjectReference Include="..\Implementations.HappenSoft\Implementations.HappenSoft.csproj" />
       <ProjectReference Include="..\Implementations.OpenAI\Implementations.OpenAI.csproj" />
     </ItemGroup>
 

@@ -4,6 +4,8 @@ using Implementations.GoogleVertexAI;
 using Implementations.OpenAI;
 using Microsoft.OpenApi.Models;
 using SDK;
+using Common;
+using Implementations.HappenSoft;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,6 +20,25 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Vision Intelligence API", Version = "v1" });
     // c.OperationFilter<SwaggerFileUploadOperationFilter>();
 });
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddMultiTenancy();
+
+var happenSoftIntelligenceConfiguration = builder.Configuration.GetSection("Intelligences:HappenSoft")
+    .Get<HSIntelligenceConfiguration>();
+if (happenSoftIntelligenceConfiguration.Enabled)
+{
+    builder.Services.AddSingleton(happenSoftIntelligenceConfiguration);
+    builder.Services.AddHttpClient<HSIntelligence>((serviceProvider, client) =>
+    {
+        var configuration = serviceProvider.GetRequiredService<HSIntelligenceConfiguration>();
+        client.BaseAddress = configuration.BaseAddress;
+        client.DefaultRequestHeaders.Add("ApiKey", configuration.ApiKey);
+        client.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue() { NoCache = true };
+    });
+    builder.Services.AddScoped<IReceiptInterpreter>(sp => sp.GetRequiredService<HSIntelligence>());
+
+}
 
 var openAiIntelligenceConfiguration = builder.Configuration.GetSection("Intelligences:OpenAI")
     .Get<OpenAiIntelligenceConfiguration>();
