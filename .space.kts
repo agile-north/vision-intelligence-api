@@ -1,7 +1,10 @@
 import java.io.File
 job("Build and push Docker :Vision Intelligence API") {
     parameters {
+        secret("nuget-proget-username","{{ project:nuget--proget--username }}", allowCustomRunOverride = true)
+        secret("nuget-proget-password","{{ project:nuget--proget--password }}", allowCustomRunOverride = true)
         text("assembly-version-path","VersionInfo.cs")
+        text("nuget-config-path","NuGet.Config")
         text("dockerfile-path","API/Dockerfile")
         text("package-repo-name","containers")
     }
@@ -45,6 +48,22 @@ job("Build and push Docker :Vision Intelligence API") {
             """.trimIndent()
         }
     }
+    container(displayName = "Update nuget config", image = "ubuntu") {
+        env["NUGET_PROGET_USERNAME"] = "{{ nuget-proget-username }}"
+        env["NUGET_PROGET_PASSWORD"] = "{{ nuget-proget-password }}"
+        shellScript {
+            interpreter = "/bin/bash"
+            content = """
+                sed -i \
+                 "s/%nuget__proget__username%/${'$'}NUGET_PROGET_USERNAME/g" \
+                 ${'$'}JB_SPACE_WORK_DIR_PATH/{{ nuget-config-path }} && \
+                 sed -i \
+                 "s/%nuget__proget__password%/${'$'}NUGET_PROGET_PASSWORD/g" \
+                 ${'$'}JB_SPACE_WORK_DIR_PATH/{{ nuget-config-path }} && \
+                 cp ${'$'}JB_SPACE_WORK_DIR_PATH/{{ nuget-config-path }} ${'$'}JB_SPACE_FILE_SHARE_PATH/NuGet.Config
+            """.trimIndent()
+        }
+    }
     container(displayName = "Establish repository","amazoncorretto:17-alpine") {
         kotlinScript { api ->
             val company = api.spaceUrl().split('.')[0].replace("https://","").trim()
@@ -57,7 +76,8 @@ job("Build and push Docker :Vision Intelligence API") {
         shellScript {
             interpreter = "/bin/bash"
             content = """
-                cp ${'$'}JB_SPACE_FILE_SHARE_PATH/VersionInfo.cs ${'$'}JB_SPACE_WORK_DIR_PATH/{{ assembly-version-path }}
+                cp ${'$'}JB_SPACE_FILE_SHARE_PATH/VersionInfo.cs ${'$'}JB_SPACE_WORK_DIR_PATH/{{ assembly-version-path }} && \
+                cp ${'$'}JB_SPACE_FILE_SHARE_PATH/NuGet.Config ${'$'}JB_SPACE_WORK_DIR_PATH/{{ nuget-config-path }}
             """.trimIndent()
         }
         dockerBuildPush {
