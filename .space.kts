@@ -69,7 +69,7 @@ job("Build and push Docker :Vision Intelligence API") {
             val company = api.spaceUrl().split('.')[0].replace("https://","").trim()
             val project = api.projectKey()
             val repository = api.gitRepositoryName()
-            api.parameters["SpaceRepo"] = "$company.registry.jetbrains.space/p/nrth/{{ package-repo-name }}/$repository".lowercase()
+            api.parameters["SpaceRepo"] = "$company.registry.jetbrains.space/p/$project/{{ package-repo-name }}/$repository".lowercase()
         }
     }
     host("Build and publish Docker image") {
