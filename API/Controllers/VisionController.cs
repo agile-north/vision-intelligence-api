@@ -1,4 +1,4 @@
-using Contracts;
+using Contracts.Receipts;
 using Microsoft.AspNetCore.Mvc;
 using SDK;
 
@@ -8,55 +8,38 @@ namespace API.Controllers;
 [Route("[controller]")]
 public class VisionController : ControllerBase
 {
-    private readonly IEnumerable<IImageInterpreter> _imageInterpreters;
+    private readonly IEnumerable<IReceiptInterpreter> _imageInterpreters;
 
-    public VisionController(IEnumerable<IImageInterpreter> imageInterpreters)
+    public VisionController(IEnumerable<IReceiptInterpreter> imageInterpreters)
     {
         _imageInterpreters = imageInterpreters;
     }
 
-    [HttpPost("AnalyseImage")]
-    public async Task<ImageQueryResult> AnalyseImageAsync(IFormFile? file,[FromQuery] FormImageQuery query)
+    [HttpPost("receipt/analyze")]
+    // [Consumes("multipart/form-data")]
+    public async Task<ReceiptQueryResult> AnalyseReceipt([FromBody] ReceiptQuery? query)
     {
         var interpreter = _imageInterpreters.FirstOrDefault();
         if (interpreter == null)
             throw new NotImplementedException();
-        var q = new ImageQuery
-        {
-            Brand = query.Brand,
-            Product = query.Product,
-            Detail = query.Detail,
-            Quantity = query.Quantity,
-            Retailer = query.Retailer,
-            Uom = query.Uom
-        };
+
+        if (query == null)
+            return new ReceiptQueryResult
+            {
+                ImprovementHint = "No criteria or image provided",
+            };
+
         try
         {
-            if (file != null)
-            {
-                byte[] data;
-                using (var ms = new MemoryStream())
-                {
-                    await file.CopyToAsync(ms);
-                    data = ms.ToArray();
-                }
-
-                q.Base64 = Convert.ToBase64String(data);
-                q.ContentType = file.ContentType;
-                return await interpreter.InterpretImage(q);
-            }
+            return await interpreter.Interpret(query);
         }
         catch (Exception ex)
         {
-            return new ImageQueryResult
+            return new ReceiptQueryResult
             {
                 ImprovementHint = "Image could not interpreted",
                 Exception = ex.GetBaseException().ToString()
             };
         }
-        return new ImageQueryResult
-        {
-            ImprovementHint = "Image could not interpreted",
-        };
     }
 }

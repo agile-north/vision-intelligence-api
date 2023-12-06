@@ -10,6 +10,10 @@
         <Compile Include="..\VersionInfo.cs" Link="Properties\VersionInfo.cs"/>
     </ItemGroup>
     <ItemGroup>
+      <PackageReference Include="Nrth.Common" Version="2.5.435-master" />
+    </ItemGroup>
+
+    <ItemGroup>
       <ProjectReference Include="..\Contracts\Contracts.csproj" />
       <ProjectReference Include="..\SDK\SDK.csproj" />
     </ItemGroup>

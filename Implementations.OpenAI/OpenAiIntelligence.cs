@@ -1,13 +1,14 @@
+using System.Diagnostics;
+using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Nodes;
-using System.Text.Json.Serialization;
 using Contracts;
+using Contracts.Receipts;
 using SDK;
 
 namespace Implementations.OpenAI;
 
-public class OpenAiIntelligence : Intelligence<OpenAiIntelligenceConfiguration>, IImageInterpreter
+public class OpenAiIntelligence : Intelligence<OpenAiIntelligenceConfiguration>, IReceiptInterpreter
 {
     private HttpClient HttpClient { get; }
 
@@ -16,10 +17,17 @@ public class OpenAiIntelligence : Intelligence<OpenAiIntelligenceConfiguration>,
         HttpClient = httpClient;
     }
 
-    public async Task<ImageQueryResult> InterpretImage(ImageQuery query)
+    public Task<ReceiptQueryResult> Interpret(ReceiptQuery query)
     {
-    
-        await Request(
+        var first = query.Criteria.FirstOrDefault();
+        return Interpret(first, query.Image);
+    }
+
+    public async Task<ReceiptQueryResult> Interpret(ReceiptCriteria query, Blob image)
+    {
+        var imageUrl = image!.AsDataUrl().ToString();
+
+        var chatCompletion = await Request(
             new
             {
                 type = "text",
@@ -30,20 +38,43 @@ public class OpenAiIntelligence : Intelligence<OpenAiIntelligenceConfiguration>,
                 type = "image_url",
                 image_url = new
                 {
-                    url = !string.IsNullOrWhiteSpace(query.Base64)
-                        ? $"data:{query.ContentType};base64,{query.Base64}"
-                        : query.Url?.ToString(),
-                    detail = query.Detail
+                    url = imageUrl,
+                    detail = query.Quality
                 }
             });
-        return new ImageQueryResult();
+
+        var s = chatCompletion.Choices.FirstOrDefault()?.Message?.Content;
+
+        var defaultValue = new ReceiptQueryResult();
+        if (s == null)
+            return defaultValue;
+
+        s = s.Replace("```json", "").Replace("```", "");
+
+        try {
+            var results = JsonSerializer.Deserialize<ReceiptQueryResult[]>(s!);
+            return new ReceiptQueryResult
+            {
+                ImprovementHint = string.Join(Environment.NewLine,
+                    results?.Where(x => !string.IsNullOrWhiteSpace(x.ImprovementHint)).Select(x => x.ImprovementHint) ??
+                    Array.Empty<string>()),
+                Exception = string.Join(Environment.NewLine,
+                    results?.Where(x => !string.IsNullOrWhiteSpace(x.Exception)).Select(x => x.Exception) ??
+                    Array.Empty<string>()),
+                Certainty = results?.Average(x => x.Certainty) ?? 0
+            };
+        }
+        catch(Exception ex)
+        {
+            throw;
+        }
     }
 
-    private async Task Request(params object[] content)
+    private async Task<ChatCompletion> Request(params object[] content)
     {
         var request = new HttpRequestMessage
         { Method = HttpMethod.Post, RequestUri = new Uri(HttpClient.BaseAddress!, "v1/chat/completions") };
-
+        
         var body = new
         {
             model = "gpt-4-vision-preview",
@@ -59,7 +90,12 @@ public class OpenAiIntelligence : Intelligence<OpenAiIntelligenceConfiguration>,
         request.Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
         var response = await HttpClient.SendAsync(request);
 
-        var str = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+            Debugger.Break();
+
         response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<ChatCompletion>();
     }
 }

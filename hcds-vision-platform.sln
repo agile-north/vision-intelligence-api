@@ -1,14 +1,25 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "API", "API\API.csproj", "{AF2C6006-360A-4BDB-AF19-C268963FA90C}"
+# Visual Studio Version 17
+VisualStudioVersion = 17.7.34031.279
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "API", "API\API.csproj", "{AF2C6006-360A-4BDB-AF19-C268963FA90C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Contracts", "Contracts\Contracts.csproj", "{78AF9A3D-BD96-4D5B-9F64-CD4F9232603E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Contracts", "Contracts\Contracts.csproj", "{78AF9A3D-BD96-4D5B-9F64-CD4F9232603E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Implementations.OpenAI", "Implementations.OpenAI\Implementations.OpenAI.csproj", "{585C0574-A3D4-44D8-889E-307C5DA5CCE7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Implementations.OpenAI", "Implementations.OpenAI\Implementations.OpenAI.csproj", "{585C0574-A3D4-44D8-889E-307C5DA5CCE7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SDK", "SDK\SDK.csproj", "{6C207047-C754-4A08-AFAA-6ADD6014E425}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SDK", "SDK\SDK.csproj", "{6C207047-C754-4A08-AFAA-6ADD6014E425}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Implementations.GoogleVertexAI", "Implementations.GoogleVertexAI\Implementations.GoogleVertexAI.csproj", "{F9841181-501B-4782-943F-219723CC32F0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Implementations.GoogleVertexAI", "Implementations.GoogleVertexAI\Implementations.GoogleVertexAI.csproj", "{F9841181-501B-4782-943F-219723CC32F0}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Implementations.HappenSoft", "Implementations.HappenSoft\Implementations.HappenSoft.csproj", "{465F7EDA-8F77-4D8A-BF41-BAFB80902BFC}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{F4A19E58-6A19-4E0C-B084-1F04E34E68EB}"
+	ProjectSection(SolutionItems) = preProject
+		NuGet.Config = NuGet.Config
+		VersionInfo.cs = VersionInfo.cs
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -36,5 +47,15 @@ Global
 		{F9841181-501B-4782-943F-219723CC32F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F9841181-501B-4782-943F-219723CC32F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F9841181-501B-4782-943F-219723CC32F0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{465F7EDA-8F77-4D8A-BF41-BAFB80902BFC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{465F7EDA-8F77-4D8A-BF41-BAFB80902BFC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{465F7EDA-8F77-4D8A-BF41-BAFB80902BFC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{465F7EDA-8F77-4D8A-BF41-BAFB80902BFC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {01811348-59F0-4E92-AC00-2EC206FE7F5E}
 	EndGlobalSection
 EndGlobal

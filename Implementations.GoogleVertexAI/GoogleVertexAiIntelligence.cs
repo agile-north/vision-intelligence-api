@@ -2,12 +2,12 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
-using Contracts;
+using Contracts.Receipts;
 using SDK;
 
 namespace Implementations.GoogleVertexAI;
 
-public class GoogleVertexAiIntelligence : Intelligence<GoogleVertexAiIntelligenceConfiguration>, IImageInterpreter
+public class GoogleVertexAiIntelligence : Intelligence<GoogleVertexAiIntelligenceConfiguration>, IReceiptInterpreter
 {
     private HttpClient HttpClient { get; }
 
@@ -17,14 +17,14 @@ public class GoogleVertexAiIntelligence : Intelligence<GoogleVertexAiIntelligenc
         HttpClient = httpClient;
     }
 
-    public Task<ImageQueryResult> InterpretImage(ImageQuery query)
+    public Task<ReceiptQueryResult> Interpret(ReceiptQuery query)
     {
-        return Request(QuestionGenerator.GenerateQuestion(query), query.Base64!);
+        return Request(QuestionGenerator.GenerateQuestion(query.Criteria.FirstOrDefault()), query.Image?.AsBase64()!);
     }
 
-    private async Task<ImageQueryResult> Request(string prompt, string bytesBase64EncodedImage)
+    private async Task<ReceiptQueryResult> Request(string prompt, string bytesBase64EncodedImage)
     {
-        var result = new ImageQueryResult();
+        var result = new ReceiptQueryResult();
         var request = new HttpRequestMessage
         {
             Method = HttpMethod.Post,
