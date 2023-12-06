@@ -5,8 +5,8 @@ EXPOSE 443
 
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 WORKDIR /src
-COPY ["API/API.csproj", "API/"]
-RUN dotnet restore "API/API.csproj"
+COPY . .
+RUN dotnet restore "hcds-vision-platform.sln"
 COPY . .
 WORKDIR "/src/API"
 RUN dotnet build "API.csproj" -c Release -o /app/build

@@ -6,9 +6,12 @@ using Microsoft.OpenApi.Models;
 using SDK;
 using Common;
 using Implementations.HappenSoft;
+using Microsoft.AspNetCore.ResponseCompression;
 
 var builder = WebApplication.CreateBuilder(args);
-
+var AppTitle = "Vision Intelligence API";
+var UpSince = DateTime.UtcNow;
+var currentVersion = AssemblyVersion.AsVersion;
 builder.Services.AddControllers(options =>
 {
     // options.ModelBinderProviders.Insert(0, new BlobHandlingModelBinderProvider());
@@ -17,13 +20,17 @@ builder.Services.AddControllers(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Vision Intelligence API", Version = "v1" });
-    // c.OperationFilter<SwaggerFileUploadOperationFilter>();
+    c.SwaggerDoc($"v{currentVersion.Major}", new OpenApiInfo() { Title = AppTitle, Version = currentVersion.ToString() });
 });
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddMultiTenancy();
-
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+});
 var happenSoftIntelligenceConfiguration = builder.Configuration.GetSection("Intelligences:HappenSoft")
     .Get<HSIntelligenceConfiguration>();
 if (happenSoftIntelligenceConfiguration.Enabled)
@@ -71,12 +78,18 @@ if (googleVertexAiIntelligenceConfiguration.Enabled)
 }
 
 var app = builder.Build();
+app.UseResponseCompression();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(config =>
+    {
+        config.SwaggerEndpoint($"./swagger/v{currentVersion.Major}/swagger.json", AppTitle);
+        config.DocumentTitle = AppTitle;
+        config.RoutePrefix = string.Empty;
+    });
 }
 
 //app.UseHttpsRedirection();

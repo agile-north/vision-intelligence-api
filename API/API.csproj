@@ -5,6 +5,7 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+        <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
     </PropertyGroup>
 
     <ItemGroup>
@@ -18,6 +19,9 @@
       <Content Include="..\.dockerignore">
         <Link>.dockerignore</Link>
       </Content>
+    </ItemGroup>
+    <ItemGroup>
+        <Compile Include="..\VersionInfo.cs" Link="Properties\VersionInfo.cs"/>
     </ItemGroup>
 
     <ItemGroup>

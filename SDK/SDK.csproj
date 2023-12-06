@@ -3,8 +3,11 @@
     <PropertyGroup>
         <TargetFramework>net6.0</TargetFramework>
         <Nullable>enable</Nullable>
+        <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
     </PropertyGroup>
-
+    <ItemGroup>
+        <Compile Include="..\VersionInfo.cs" Link="Properties\VersionInfo.cs"/>
+    </ItemGroup>
     <ItemGroup>
       <ProjectReference Include="..\Contracts\Contracts.csproj" />
     </ItemGroup>
