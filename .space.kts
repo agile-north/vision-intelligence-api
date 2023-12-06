@@ -57,8 +57,7 @@ job("Build and push Docker :Vision Intelligence API") {
         shellScript {
             interpreter = "/bin/bash"
             content = """
-                cp ${'$'}JB_SPACE_FILE_SHARE_PATH/VersionInfo.cs ${'$'}JB_SPACE_WORK_DIR_PATH/{{ assembly-version-path }} && \
-                cp ${'$'}JB_SPACE_FILE_SHARE_PATH/NuGet.Config ${'$'}JB_SPACE_WORK_DIR_PATH/{{ nuget-config-path }}
+                cp ${'$'}JB_SPACE_FILE_SHARE_PATH/VersionInfo.cs ${'$'}JB_SPACE_WORK_DIR_PATH/{{ assembly-version-path }}
             """.trimIndent()
         }
         dockerBuildPush {
