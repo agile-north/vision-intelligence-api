@@ -2,7 +2,7 @@ import java.io.File
 job("Build and push Docker :Vision Intelligence API") {
     parameters {
         text("assembly-version-path","VersionInfo.cs")
-        text("dockerfile-path","Gateway/Dockerfile")
+        text("dockerfile-path","API/Dockerfile")
         text("package-repo-name","containers")
     }
     container(displayName = "Extract assembly version", image = "ubuntu") {
