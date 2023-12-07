@@ -49,11 +49,11 @@ public class OpenAiIntelligence : Intelligence<OpenAiIntelligenceConfiguration>,
         var defaultValue = new ReceiptQueryResult();
         if (s == null)
             return defaultValue;
-        var startIndexOfJson = s.IndexOf("[{", StringComparison.InvariantCulture);
-        var lastIndexOfJson =s.LastIndexOf("}]", StringComparison.InvariantCulture);
+        var startIndexOfJson = s.IndexOf("[", StringComparison.InvariantCulture);
+        var lastIndexOfJson =s.LastIndexOf("]", StringComparison.InvariantCulture);
         if (startIndexOfJson == -1 || lastIndexOfJson == -1)
-            return defaultValue;
-        s = s.Substring(startIndexOfJson, lastIndexOfJson + 2);
+            throw new Exception(s);
+        s = s.Substring(startIndexOfJson, lastIndexOfJson - startIndexOfJson + 1);
         try
         {
             var results = JsonSerializer.Deserialize<ReceiptQueryResult[]>(s!);
