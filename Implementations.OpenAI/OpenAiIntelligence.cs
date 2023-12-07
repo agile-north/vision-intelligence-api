@@ -12,7 +12,8 @@ public class OpenAiIntelligence : Intelligence<OpenAiIntelligenceConfiguration>,
 {
     private HttpClient HttpClient { get; }
 
-    public OpenAiIntelligence(OpenAiIntelligenceConfiguration configuration, HttpClient httpClient) : base(configuration)
+    public OpenAiIntelligence(OpenAiIntelligenceConfiguration configuration, HttpClient httpClient) : base(
+        configuration)
     {
         HttpClient = httpClient;
     }
@@ -48,10 +49,13 @@ public class OpenAiIntelligence : Intelligence<OpenAiIntelligenceConfiguration>,
         var defaultValue = new ReceiptQueryResult();
         if (s == null)
             return defaultValue;
-
-        s = s.Replace("```json", "").Replace("```", "");
-
-        try {
+        var startIndexOfJson = s.IndexOf("[{", StringComparison.InvariantCulture);
+        var lastIndexOfJson =s.LastIndexOf("}]", StringComparison.InvariantCulture);
+        if (startIndexOfJson == -1 || lastIndexOfJson == -1)
+            return defaultValue;
+        s = s.Substring(startIndexOfJson, lastIndexOfJson + 2);
+        try
+        {
             var results = JsonSerializer.Deserialize<ReceiptQueryResult[]>(s!);
             return new ReceiptQueryResult
             {
@@ -64,7 +68,7 @@ public class OpenAiIntelligence : Intelligence<OpenAiIntelligenceConfiguration>,
                 Certainty = results?.Average(x => x.Certainty) ?? 0
             };
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             throw;
         }
@@ -73,13 +77,15 @@ public class OpenAiIntelligence : Intelligence<OpenAiIntelligenceConfiguration>,
     private async Task<ChatCompletion> Request(params object[] content)
     {
         var request = new HttpRequestMessage
-        { Method = HttpMethod.Post, RequestUri = new Uri(HttpClient.BaseAddress!, "v1/chat/completions") };
-        
+            { Method = HttpMethod.Post, RequestUri = new Uri(HttpClient.BaseAddress!, "v1/chat/completions") };
+
         var body = new
         {
             model = "gpt-4-vision-preview",
-            messages = new object[]{
-                new {
+            messages = new object[]
+            {
+                new
+                {
                     content,
                     role = "user"
                 }
