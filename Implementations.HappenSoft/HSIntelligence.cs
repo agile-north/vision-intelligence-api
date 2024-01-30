@@ -3,25 +3,37 @@ using System.Globalization;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Net.Mime;
+using System.Security.Authentication;
 using System.Text;
 using System.Text.Json;
+using System.Text.Unicode;
+using Common;
 using Common.MultiTenancy;
 using Common.Runtime.ExceptionServices;
 using Contracts;
 using Contracts.Receipts;
+using Microsoft.Extensions.Caching.Distributed;
 using SDK;
 
 namespace Implementations.HappenSoft;
 
 public class HSIntelligence : Intelligence<HSIntelligenceConfiguration>, IReceiptInterpreter
 {
-    private ITenantAccessor _tenantAccessor;
+    private readonly ITenantAccessor _tenantAccessor;
+    private readonly IIdempotencyKeyProvider _idempotencyKeyProvider;
+    private readonly IDistributedCache _distributedCache;
     private HttpClient HttpClient { get; }
 
-    public HSIntelligence(HSIntelligenceConfiguration configuration, HttpClient httpClient, ITenantAccessor tenantAccessor) : base(configuration)
+    public HSIntelligence(HSIntelligenceConfiguration configuration,
+        HttpClient httpClient,
+        ITenantAccessor tenantAccessor,
+        IIdempotencyKeyProvider idempotencyKeyProvider,
+        IDistributedCache distributedCache) : base(configuration)
     {
         HttpClient = httpClient;
         _tenantAccessor = tenantAccessor;
+        _idempotencyKeyProvider = idempotencyKeyProvider;
+        _distributedCache = distributedCache;
     }
 
     public Task<ReceiptQueryResult> Interpret(ReceiptQuery query)
@@ -29,26 +41,27 @@ public class HSIntelligence : Intelligence<HSIntelligenceConfiguration>, IReceip
         return Interpret(query, query.Image);
     }
 
-    ConfigureCampaignRequest FromReceiptQuery(string tenant, ReceiptQuery query)
+    ConfigureCampaignRequest FromReceiptQuery(string campaignCode, string campaignName, ReceiptQuery query)
     {
         var req = new ConfigureCampaignRequest
         {
-            CampaignName  = tenant,
-            CampaignKey = tenant,
-            Stores = query.Criteria.SelectMany(c=>c.Retailers).ToList(),
+            CampaignName = campaignName,
+            CampaignCode = campaignCode,
+            Stores = query.Criteria.SelectMany(c => c.Retailers).ToList(),
             Active = true,
-            ProductCodes = query.Criteria.SelectMany(c => c.Products.Items.Where(p => !string.IsNullOrWhiteSpace(p!.Product)).Select(p => p!.Product)).ToList(),
+            ProductCodes = query.Criteria.SelectMany(c =>
+                c.Products.Items.Where(p => !string.IsNullOrWhiteSpace(p!.Product)).Select(p => p!.Product)).ToList(),
         };
 
         var first = query.Criteria.FirstOrDefault();
-        
+
         if (first.FromDate.HasValue)
-            req.ActiveDateRange.Add(first.FromDate.Value);
+            req.IssuedStartDate = first.FromDate.Value;
 
         if (first.ToDate.HasValue)
-            req.ActiveDateRange.Add(first.ToDate.Value);
+            req.IssuedEndDate = first.ToDate.Value;
 
-        if (req.ActiveDateRange.Any())
+        if (req.IssuedEndDate.HasValue || req.IssuedStartDate.HasValue)
             req.ValidateIssuedDate = true;
 
         req.ValidateStore = true;
@@ -62,20 +75,40 @@ public class HSIntelligence : Intelligence<HSIntelligenceConfiguration>, IReceip
         if (query == null)
             return defaultValue;
 
-        var tenantId = await _tenantAccessor.ResolveTenantAsync();
+        var tenantSchemeCandidate = await _tenantAccessor.ResolveTenantAsync();
+        //unpack tenant url
+        if (!Uri.TryCreate(tenantSchemeCandidate, UriKind.Absolute, out var tenantScheme) ||
+            tenantScheme.Scheme != "uwina" ||
+            !tenantScheme.Query.Contains("name="))
+            throw new InvalidCredentialException("Tenant");
+        var campaignCode = tenantScheme.Host;
+        var campaignName =
+            tenantScheme.Query[tenantScheme.Query.LastIndexOf("name=", StringComparison.InvariantCulture)..];
+        campaignName = campaignName.SplitExact("=")[1];
 
-        if (string.IsNullOrWhiteSpace(tenantId))
-            tenantId = Guid.NewGuid().ToString();
+        var idempotencyKey = await _idempotencyKeyProvider.ResolveAsync();
+        if (idempotencyKey is null)
+            throw new ArgumentException("Idempotency");
+        try
+        {
+            var key = $"Happensoft:ConfiguredCampaign:{campaignCode}";
+            var provisioned = _distributedCache.Get(key);
+            if (provisioned is null)
+            {
+                var configureResponse =
+                    await ConfigureCampaign(FromReceiptQuery(campaignCode, campaignName, query), false);
+                if (!configureResponse.WasSuccessful && !configureResponse.Description.Contains("unique"))
+                    throw new Exception(configureResponse.Description);
+                _distributedCache.Set(key, Encoding.UTF8.GetBytes("true"));
+            }
 
-        try {
-            var configueResponse = await ConfigureCampaign(FromReceiptQuery(tenantId, query));
-
-            if (!configueResponse.WasSuccessful)
-                throw new Exception(configueResponse.Description);
-
+            var updateResponse =
+                await ConfigureCampaign(FromReceiptQuery(campaignCode, campaignName, query));
+            
             var scanResponse = await SubmitReceipt(new SubmitReceiptRequest
             {
-                CampaignKey = tenantId,
+                CampaignCode = campaignCode,
+                ReceiptId = idempotencyKey,
                 ReceiptImage = image
             });
 
@@ -85,23 +118,32 @@ public class HSIntelligence : Intelligence<HSIntelligenceConfiguration>, IReceip
                 ImprovementHint = scanResponse?.Description ?? $"There was an error",
             };
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             return new ReceiptQueryResult
             {
                 Certainty = 0,
                 ImprovementHint = $"There was an error",
-                Exception = string.Join(Environment.NewLine + Environment.NewLine, ex.GetAllExceptions().Select(x=>$"{x.Message}{Environment.NewLine}{x.StackTrace}"))
+                Exception = string.Join(Environment.NewLine + Environment.NewLine,
+                    ex.GetAllExceptions().Select(x => $"{x.Message}{Environment.NewLine}{x.StackTrace}"))
             };
         }
     }
 
-    private async Task<ConfigureCampaignResponse> ConfigureCampaign(ConfigureCampaignRequest request)
+    private async Task<ConfigureCampaignResponse> ConfigureCampaign(ConfigureCampaignRequest request,bool update=true)
     {
         var http = new HttpRequestMessage
-        { Method = HttpMethod.Post, RequestUri = new Uri(HttpClient.BaseAddress!, "api/ReceiptOcr/ConfigureCampaign") };
+        {
+            Method = update? HttpMethod.Put: HttpMethod.Post, RequestUri = new Uri(HttpClient.BaseAddress!, update ? "Campaign/UpdateCampaign": "Campaign/CreateCampaign")
+        };
 
-        http.Content = new StringContent(JsonSerializer.Serialize(request), Encoding.UTF8, "application/json");
+        http.Content = update
+            ? new StringContent(JsonSerializer.Serialize(request), Encoding.UTF8, "application/json")
+            : new StringContent(JsonSerializer.Serialize(new
+            {
+                request.CampaignCode,
+                request.CampaignName
+            }), Encoding.UTF8, "application/json");
 
         var response = await HttpClient.SendAsync(http);
 
@@ -113,7 +155,7 @@ public class HSIntelligence : Intelligence<HSIntelligenceConfiguration>, IReceip
     private async Task<SubmitReceiptResponse> SubmitReceipt(SubmitReceiptRequest request)
     {
         var http = new HttpRequestMessage
-        { Method = HttpMethod.Post, RequestUri = new Uri(HttpClient.BaseAddress!, "api/ReceiptOcr/SubmitReceipt") };
+            { Method = HttpMethod.Post, RequestUri = new Uri(HttpClient.BaseAddress!, "Receipt/SubmitReceipt") };
 
         http.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
 
@@ -122,7 +164,7 @@ public class HSIntelligence : Intelligence<HSIntelligenceConfiguration>, IReceip
         var data = Convert.FromBase64String(request.ReceiptImage!.Base64);
         using var ms = new MemoryStream(data);
         ms.Position = 0;
-        
+
         var fileContent = new StreamContent(ms);
         fileContent.Headers.ContentType = new MediaTypeHeaderValue(request.ReceiptImage!.ContentType);
         fileContent.Headers.ContentDisposition = new System.Net.Http.Headers.ContentDispositionHeaderValue("form-data")
@@ -132,12 +174,20 @@ public class HSIntelligence : Intelligence<HSIntelligenceConfiguration>, IReceip
         };
         form.Add(fileContent);
 
-        var campaignKeyContent = new StringContent(request.CampaignKey);
-        campaignKeyContent.Headers.ContentDisposition = new System.Net.Http.Headers.ContentDispositionHeaderValue("form-data")
-        {
-            Name = $"\"{nameof(request.CampaignKey)}\""
-        };
+        var campaignKeyContent = new StringContent(request.CampaignCode);
+        campaignKeyContent.Headers.ContentDisposition =
+            new System.Net.Http.Headers.ContentDispositionHeaderValue("form-data")
+            {
+                Name = $"\"{nameof(request.CampaignCode)}\""
+            };
         form.Add(campaignKeyContent);
+        var idempotencyKeyContent = new StringContent(request.ReceiptId);
+        idempotencyKeyContent.Headers.ContentDisposition =
+            new System.Net.Http.Headers.ContentDispositionHeaderValue("form-data")
+            {
+                Name = $"\"{nameof(request.ReceiptId)}\""
+            };
+        form.Add(idempotencyKeyContent);
 
         http.Content = form;
 

@@ -9,6 +9,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="6.0.1" />
         <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="6.0.22" />
         <PackageReference Include="Nrth.Common" Version="2.5.435-master" />
         <PackageReference Include="Nrth.Common.AspNetCore" Version="2.5.435-master" />

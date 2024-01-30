@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using API;
+using API.Idempotency;
 using Implementations.GoogleVertexAI;
 using Implementations.OpenAI;
 using Microsoft.OpenApi.Models;
@@ -25,12 +26,17 @@ builder.Services.AddSwaggerGen(c =>
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddMultiTenancy();
+builder.Services.AddIdempotency(options =>
+{
+    options.HeaderKey = "Idempotency-Key";
+});
 builder.Services.AddResponseCompression(options =>
 {
     options.EnableForHttps = true;
     options.Providers.Add<BrotliCompressionProvider>();
     options.Providers.Add<GzipCompressionProvider>();
 });
+builder.Services.AddDistributedMemoryCache();
 var happenSoftIntelligenceConfiguration = builder.Configuration.GetSection("Intelligences:HappenSoft")
     .Get<HSIntelligenceConfiguration>();
 if (happenSoftIntelligenceConfiguration.Enabled)
