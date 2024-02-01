@@ -33,15 +33,15 @@ public class HSIntelligence : Intelligence<HSIntelligenceConfiguration>, IReceip
     {
         var req = new ConfigureCampaignRequest
         {
-            CampaignName  = tenant,
+            CampaignName = tenant,
             CampaignKey = tenant,
-            Stores = query.Criteria.SelectMany(c=>c.Retailers).ToList(),
+            Stores = query.Criteria.SelectMany(c => c.Retailers).ToList(),
             Active = true,
             ProductCodes = query.Criteria.SelectMany(c => c.Products.Items.Where(p => !string.IsNullOrWhiteSpace(p!.Product)).Select(p => p!.Product)).ToList(),
         };
 
         var first = query.Criteria.FirstOrDefault();
-        
+
         if (first.FromDate.HasValue)
             req.ActiveDateRange.Add(first.FromDate.Value);
 
@@ -67,31 +67,42 @@ public class HSIntelligence : Intelligence<HSIntelligenceConfiguration>, IReceip
         if (string.IsNullOrWhiteSpace(tenantId))
             tenantId = Guid.NewGuid().ToString();
 
-        try {
+        try
+        {
             var configueResponse = await ConfigureCampaign(FromReceiptQuery(tenantId, query));
 
             if (!configueResponse.WasSuccessful)
                 throw new Exception(configueResponse.Description);
 
-            var scanResponse = await SubmitReceipt(new SubmitReceiptRequest
+            var request = new SubmitReceiptRequest
             {
                 CampaignKey = tenantId,
                 ReceiptImage = image
-            });
+            };
+
+            var scanResponse = await SubmitReceipt(request);
+
+            request.ReceiptImage = null; // remove the binary
 
             return new ReceiptQueryResult
             {
-                Certainty = ((scanResponse?.WasSuccessful ?? false) ? 100 : 0),
+                Certainty = ((scanResponse?.Matched ?? false) ? 100 : 0),
                 ImprovementHint = scanResponse?.Description ?? $"There was an error",
+                Provider = new
+                {
+                    Type = typeof(HSIntelligence).FullName,
+                    Request = request,
+                    Response = scanResponse
+                }
             };
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             return new ReceiptQueryResult
             {
                 Certainty = 0,
                 ImprovementHint = $"There was an error",
-                Exception = string.Join(Environment.NewLine + Environment.NewLine, ex.GetAllExceptions().Select(x=>$"{x.Message}{Environment.NewLine}{x.StackTrace}"))
+                Exception = string.Join(Environment.NewLine + Environment.NewLine, ex.GetAllExceptions().Select(x => $"{x.Message}{Environment.NewLine}{x.StackTrace}"))
             };
         }
     }
@@ -122,7 +133,7 @@ public class HSIntelligence : Intelligence<HSIntelligenceConfiguration>, IReceip
         var data = Convert.FromBase64String(request.ReceiptImage!.Base64);
         using var ms = new MemoryStream(data);
         ms.Position = 0;
-        
+
         var fileContent = new StreamContent(ms);
         fileContent.Headers.ContentType = new MediaTypeHeaderValue(request.ReceiptImage!.ContentType);
         fileContent.Headers.ContentDisposition = new System.Net.Http.Headers.ContentDispositionHeaderValue("form-data")
