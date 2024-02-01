@@ -104,18 +104,28 @@ public class HSIntelligence : Intelligence<HSIntelligenceConfiguration>, IReceip
 
             var updateResponse =
                 await ConfigureCampaign(FromReceiptQuery(campaignCode, campaignName, query));
-            
-            var scanResponse = await SubmitReceipt(new SubmitReceiptRequest
+
+            var request = new SubmitReceiptRequest
             {
                 CampaignCode = campaignCode,
                 ReceiptId = idempotencyKey,
                 ReceiptImage = image
-            });
+            };
+
+            var scanResponse = await SubmitReceipt(request);
+
+            request.ReceiptImage = null; // remove the binary
 
             return new ReceiptQueryResult
             {
-                Certainty = ((scanResponse?.WasSuccessful ?? false) ? 100 : 0),
+                Certainty = ((scanResponse?.Matched ?? false) ? 100 : 0),
                 ImprovementHint = scanResponse?.Description ?? $"There was an error",
+                Provider = new
+                {
+                    Type = typeof(HSIntelligence).FullName,
+                    Request = request,
+                    Response = scanResponse
+                }
             };
         }
         catch (Exception ex)
@@ -130,11 +140,12 @@ public class HSIntelligence : Intelligence<HSIntelligenceConfiguration>, IReceip
         }
     }
 
-    private async Task<ConfigureCampaignResponse> ConfigureCampaign(ConfigureCampaignRequest request,bool update=true)
+    private async Task<ConfigureCampaignResponse> ConfigureCampaign(ConfigureCampaignRequest request, bool update = true)
     {
         var http = new HttpRequestMessage
         {
-            Method = update? HttpMethod.Put: HttpMethod.Post, RequestUri = new Uri(HttpClient.BaseAddress!, update ? "Campaign/UpdateCampaign": "Campaign/CreateCampaign")
+            Method = update ? HttpMethod.Put : HttpMethod.Post,
+            RequestUri = new Uri(HttpClient.BaseAddress!, update ? "Campaign/UpdateCampaign" : "Campaign/CreateCampaign")
         };
 
         http.Content = update
@@ -155,7 +166,7 @@ public class HSIntelligence : Intelligence<HSIntelligenceConfiguration>, IReceip
     private async Task<SubmitReceiptResponse> SubmitReceipt(SubmitReceiptRequest request)
     {
         var http = new HttpRequestMessage
-            { Method = HttpMethod.Post, RequestUri = new Uri(HttpClient.BaseAddress!, "Receipt/SubmitReceipt") };
+        { Method = HttpMethod.Post, RequestUri = new Uri(HttpClient.BaseAddress!, "Receipt/SubmitReceipt") };
 
         http.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
 

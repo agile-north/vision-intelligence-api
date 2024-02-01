@@ -7,5 +7,6 @@ namespace Contracts.Receipts
         public double? Certainty { get; set; }
         public string? ImprovementHint { get; set; }
         public string? Exception { get; set; }
+        public object Provider { get; set; }
     }
 }
