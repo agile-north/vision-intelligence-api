@@ -119,13 +119,7 @@ public class HSIntelligence : Intelligence<HSIntelligenceConfiguration>, IReceip
             return new ReceiptQueryResult
             {
                 Certainty = ((scanResponse?.Matched ?? false) ? 100 : 0),
-                ImprovementHint = scanResponse?.Description ?? $"There was an error",
-                Provider = new
-                {
-                    Type = typeof(HSIntelligence).FullName,
-                    Request = request,
-                    Response = scanResponse
-                }
+                ImprovementHint = scanResponse?.Description ?? $"There was an error"
             };
         }
         catch (Exception ex)
